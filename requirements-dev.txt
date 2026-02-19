@@ -1,0 +1,4 @@
+pytest==7.4.0
+httpx==0.24.1
+py==1.11.0
+setuptools==65.5.0
