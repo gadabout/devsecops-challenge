@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bookings-api
+  namespace: bookings
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bookings-api
+  template:
+    metadata:
+      labels:
+        app: bookings-api
+    spec:
+      serviceAccountName: bookings-api
+      containers:
+        - name: api
+          image: peek/bookings-api:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: bookings-api
+          securityContext:
+            privileged: true
+            runAsUser: 0
+            allowPrivilegeEscalation: true
+          volumeMounts:
+            # The nightly export job writes CSVs onto the node before they are
+            # shipped to S3.
+            - name: host-root
+              mountPath: /host
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+      volumes:
+        - name: host-root
+          hostPath:
+            path: /
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bookings-api
+  namespace: bookings
+spec:
+  type: LoadBalancer
+  selector:
+    app: bookings-api
+  ports:
+    - port: 80
+      targetPort: 8000

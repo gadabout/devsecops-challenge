@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bookings-db
+  namespace: bookings
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bookings-db
+  template:
+    metadata:
+      labels:
+        app: bookings-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: peek
+            - name: POSTGRES_DB
+              value: bookings
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bookings-api
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bookings-db
+  namespace: bookings
+spec:
+  type: LoadBalancer
+  selector:
+    app: bookings-db
+  ports:
+    - port: 5432
+      targetPort: 5432
