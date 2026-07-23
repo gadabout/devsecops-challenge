@@ -1,0 +1,37 @@
+name: PR checks
+
+# Runs on pull_request_target so that pull requests from forks can have a comment
+# posted back to them, which the plain pull_request trigger cannot do.
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Check the app imports
+        run: python -c "import app.main"
+
+      - name: Comment on the pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Checked pull request: ${{ github.event.pull_request.title }}"
+          gh pr comment "${{ github.event.pull_request.number }}" --body "Smoke checks passed."

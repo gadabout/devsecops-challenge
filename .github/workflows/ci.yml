@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions: write-all
+
+env:
+  DATABASE_URL: postgresql://peek:hunter2@localhost:5432/bookings
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: peek
+          POSTGRES_PASSWORD: hunter2
+          POSTGRES_DB: bookings
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U peek -d bookings"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Load schema and seed data
+        run: psql "$DATABASE_URL" -f db/init.sql
+
+      - name: Run tests
+        run: pytest
+
+  image:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: peek/bookings-api:${{ github.sha }}
