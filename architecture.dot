@@ -1,0 +1,28 @@
+digraph AppArchitecture {
+    rankdir=LR;
+    node [fontname="Arial"];
+    edge [fontname="Arial"];
+
+    // External actors
+    customer [label="Customers" shape=ellipse style=filled fillcolor=lightblue];
+    operator [label="Operator Staff" shape=ellipse style=filled fillcolor=lightblue];
+
+    // Application
+    bookingsAPI [label="Bookings API\n(Python/FastAPI)\n\n• Activity search\n• Booking creation\n• Operator dashboard endpoints\n• Webhook notifications"
+                 shape=rect style="rounded,filled" fillcolor=lightgreen];
+
+    // Database
+    db [label="PostgreSQL\nDatabase" shape=cylinder style=filled fillcolor=lightgray];
+
+    // Operator-hosted endpoint
+    hook [label="Operator Webhook\nEndpoint" shape=rect style="rounded,filled" fillcolor=lightyellow];
+
+    // Connections with labels
+    customer -> bookingsAPI [label="GET /activities\nPOST /bookings\n(JSON API)"];
+    operator -> bookingsAPI [label="POST /auth/login\nGET /bookings\nGET /admin/export\n(JSON API)" style=dashed color=blue];
+    bookingsAPI -> db [label="Store/Retrieve bookings\n(SQL)"];
+    bookingsAPI -> hook [label="POST booking events\n(JSON)" style=dashed];
+
+    // Layout hints
+    {rank=same; customer; operator;}
+}
